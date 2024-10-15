@@ -3,6 +3,8 @@ from tkinter import filedialog
 import pygame
 
 
+mixer_volume = 100
+
 pygame.mixer.init()
 
 def load_music():
@@ -20,10 +22,17 @@ def unpause_music():
 def stop_music():
     pygame.mixer.music.stop()
 
+def set_volume(event):
+    volume = volume_slider.get() / 100
+    pygame.mixer.music.set_volume(volume)
+
 
 app = ttk.Window(themename="darkly")
 app.title("Music Player")
 app.geometry("400x300")
+
+song_slider = ttk.Scale(from_=0, to=100)
+song_slider.pack(pady=10)
 
 load_button = ttk.Button(app, text="Play from file", command=load_music)
 load_button.pack(pady=10)
@@ -36,5 +45,9 @@ unpause_button.pack(pady=10)
 
 stop_button = ttk.Button(app, text="Stop", command=stop_music)
 stop_button.pack(pady=10)
+
+volume_slider = ttk.Scale(from_=100, to=0, orient='vertical', value=mixer_volume, command=set_volume)
+volume_slider.pack(pady=10)
+set_volume(None)
 
 app.mainloop()
