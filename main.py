@@ -9,6 +9,7 @@ current_song_time = 0
 is_timer_running = False
 
 user_dragging_progress_slider = False
+progress_update_job = None
 
 pygame.mixer.init()
 
@@ -18,9 +19,11 @@ def format_time(seconds):
     return f"{mins:02}:{secs:02}"
 
 def load_music():
-    global song_length_in_s, current_song_time, is_timer_running
+    global song_length_in_s, current_song_time, is_timer_running, progress_update_job
     file_path = filedialog.askopenfilename(filetypes=[("MP3 Files", "*.mp3"), ("WAV Files", "*.wav"), ("All Files", "*.*")])
     if file_path:
+        if progress_update_job is not None:
+            app.after_cancel(progress_update_job)
         pygame.mixer.music.load(file_path)
         pygame.mixer.music.play()
 
@@ -42,24 +45,26 @@ def unpause_music():
     is_timer_running = True
 
 def stop_music():
-    global current_song_time, is_timer_running
+    global current_song_time, is_timer_running, progress_update_job
     pygame.mixer.music.stop()
     current_time_label.config(text=format_time(0))
     current_song_time = 0
     is_timer_running = False
+    if progress_update_job is not None:
+        app.after_cancel(progress_update_job)
 
 def set_volume(event):
     volume = volume_slider.get() / 100
     pygame.mixer.music.set_volume(volume)
 
 def update_progress_slider():
-    global current_song_time
+    global current_song_time, progress_update_job
     if is_timer_running and not user_dragging_progress_slider:
         current_song_time += 1
         if current_song_time <= song_length_in_s:
             song_progress_slider.set(current_song_time)
             current_time_label.config(text=format_time(current_song_time))
-    app.after(1000, update_progress_slider)
+    progress_update_job = app.after(1000, update_progress_slider)
 
 def on_progress_slider_press(event):
     global user_dragging_progress_slider
