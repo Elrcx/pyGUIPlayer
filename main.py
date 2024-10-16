@@ -36,13 +36,19 @@ def load_music():
 
 def pause_music():
     global is_timer_running
-    pygame.mixer.music.pause()
-    is_timer_running = False
+    if is_timer_running:
+        pygame.mixer.music.pause()
+        is_timer_running = False
+        pause_button.config(text="▶")
+    else:
+        pygame.mixer.music.unpause()
+        is_timer_running = True
+        pause_button.config(text="⏸︎")
 
-def unpause_music():
-    global is_timer_running
-    pygame.mixer.music.unpause()
-    is_timer_running = True
+# def unpause_music():
+#     global is_timer_running
+#     pygame.mixer.music.unpause()
+#     is_timer_running = True
 
 def stop_music():
     global current_song_time, is_timer_running, progress_update_job
@@ -102,13 +108,19 @@ max_time_label.pack(side="left")
 load_button = ttk.Button(app, text="Play from file", command=load_music)
 load_button.pack(pady=10)
 
-pause_button = ttk.Button(app, text="Pause", command=pause_music)
+pause_button = ttk.Button(app, text="⏸︎", command=pause_music)
 pause_button.pack(pady=10)
 
-unpause_button = ttk.Button(app, text="Unpause", command=unpause_music)
-unpause_button.pack(pady=10)
+# unpause_button = ttk.Button(app, text="Unpause", command=unpause_music)
+# unpause_button.pack(pady=10)
 
-stop_button = ttk.Button(app, text="Stop", command=stop_music)
+stop_button = ttk.Button(app, text="⏹︎", command=stop_music)
+stop_button.pack(pady=10)
+
+stop_button = ttk.Button(app, text="⏮︎︎")
+stop_button.pack(pady=10)
+
+stop_button = ttk.Button(app, text="⏭︎")
 stop_button.pack(pady=10)
 
 volume_slider = ttk.Scale(from_=100, to=0, orient='vertical', value=mixer_volume, command=set_volume)
