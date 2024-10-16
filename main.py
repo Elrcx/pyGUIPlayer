@@ -122,6 +122,54 @@ def on_track_double_click(event):
         track_number = int(track_table.item(selected_item)['values'][1]) - 1
         play_track(track_number)
 
+def clear_playlist():
+    global track_list
+    track_list.clear()
+    for item in track_table.get_children():
+        track_table.delete(item)
+
+def delete_selected_track(event):
+    global track_list
+    selected_item = track_table.selection()
+
+    if selected_item:
+        track_number = int(track_table.item(selected_item)['values'][1]) - 1  # Subtract 1 for the track_list index
+        del track_list[track_number]
+
+        track_table.delete(selected_item)
+
+        for i, item_id in enumerate(track_table.get_children()):
+            track_table.item(item_id, values=('', i + 1,
+                                              track_table.item(item_id, 'values')[2],
+                                              track_table.item(item_id, 'values')[3],
+                                              track_table.item(item_id, 'values')[4]))
+
+def save_playlist():
+    playlist_file = filedialog.asksaveasfilename(defaultextension=".playlist", filetypes=[("Playlist Files", "*.playlist")])
+
+    if playlist_file:
+        with open(playlist_file, 'w') as file:
+            for track in track_list:
+                file.write(track + "\n")
+
+def load_playlist():
+    global track_list, current_track_index
+
+    playlist_file = filedialog.askopenfilename(filetypes=[("Playlist Files", "*.playlist")])
+
+    if playlist_file:
+        with open(playlist_file, 'r') as file:
+            #clear_playlist() # this is to clear existing entries in track_list but maybe we want to append new one? I will leave it commented out for now.
+            for line in file:
+                track_path = line.strip()
+                track_list.append(track_path)
+                track_name = os.path.basename(track_path)
+                track_table.insert('', 'end', values=('', len(track_list), track_name, '', ''))
+
+        if len(track_list) > 0:
+            current_track_index = 0
+            play_track(current_track_index)
+
 
 app = ttk.Window(themename="darkly")
 app.title("Music Player")
@@ -180,13 +228,13 @@ playlist_controls_frame.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
 load_button = ttk.Button(playlist_controls_frame, text="Add to playlist", command=load_music)
 load_button.pack(side="left", padx=5)
 
-save_playlist_button = ttk.Button(playlist_controls_frame, text="Save playlist")
+save_playlist_button = ttk.Button(playlist_controls_frame, text="Save playlist", command=save_playlist)
 save_playlist_button.pack(side="left", padx=5)
 
-load_playlist_button = ttk.Button(playlist_controls_frame, text="Load playlist")
+load_playlist_button = ttk.Button(playlist_controls_frame, text="Load playlist", command=load_playlist)
 load_playlist_button.pack(side="left", padx=5)
 
-clear_playlist_button = ttk.Button(playlist_controls_frame, text="Clear playlist")
+clear_playlist_button = ttk.Button(playlist_controls_frame, text="Clear playlist", command=clear_playlist)
 clear_playlist_button.pack(side="left", padx=5)
 
 table_frame = ttk.Frame(app)
@@ -208,6 +256,7 @@ track_table.column('Duration', width=80, stretch=False)
 
 track_table.pack(side="left", fill="both", expand=True)
 track_table.bind("<Double-1>", on_track_double_click)
+track_table.bind("<Delete>", delete_selected_track)
 
 track_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=track_table.yview)
 track_scrollbar.pack(side="right", fill="y")
