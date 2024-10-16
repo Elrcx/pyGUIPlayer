@@ -2,6 +2,7 @@ import ttkbootstrap as ttk
 from tkinter import filedialog
 import pygame
 import os
+from mutagen import File
 
 mixer_volume = 100
 song_length_in_s = 0
@@ -21,15 +22,46 @@ def format_time(seconds):
     secs = seconds % 60
     return f"{mins:02}:{secs:02}"
 
+def get_track_metadata(file_path):
+    audio = File(file_path)
+
+    if audio is not None and audio.info is not None:
+        duration = int(audio.info.length)
+    else:
+        duration = 0
+
+    artist = audio.get('TPE1', "?")
+    album = audio.get('TALB', "?")
+    title = audio.get('TIT2', os.path.basename(file_path))
+    return duration, artist, album, title
+
+def add_entry_to_playlist(file_path):
+    track_list.append(file_path)
+    duration, artist, album, title = get_track_metadata(file_path)
+    track_table.insert('', 'end', values=('', len(track_list), title, f"{artist} - {album}", format_time(duration)))
+    reformat_playlist_display()
+
+def reformat_playlist_display():
+    item_ids = track_table.get_children()
+    for i, item_id in enumerate(item_ids):
+        if i == current_track_index:
+            track_table.item(item_id, values=('▶', i + 1,
+                                              track_table.item(item_id, 'values')[2],
+                                              track_table.item(item_id, 'values')[3],
+                                              track_table.item(item_id, 'values')[4]))
+        else:
+            track_table.item(item_id, values=('', i + 1,
+                                              track_table.item(item_id, 'values')[2],
+                                              track_table.item(item_id, 'values')[3],
+                                              track_table.item(item_id, 'values')[4]))
+
 def load_music():
     global song_length_in_s, current_song_time, is_timer_running, progress_update_job, current_track_index
     file_paths = filedialog.askopenfilenames(
         filetypes=[("MP3 Files", "*.mp3"), ("WAV Files", "*.wav"), ("All Files", "*.*")])
     if file_paths:
         for file_path in file_paths:
-            track_list.append(file_path)
-            file_name = os.path.basename(file_path)
-            track_table.insert('', 'end', values=('', len(track_list), file_name, '', ''))
+            add_entry_to_playlist(file_path)
 
     if len(track_list) > 0:
         current_track_index = 0
@@ -46,27 +78,17 @@ def play_track(index):
     pygame.mixer.music.load(file_path)
     pygame.mixer.music.play()
 
-    song_length_in_s = 300  # Example length, you can replace it with actual song length logic
+    duration, artist, album, title = get_track_metadata(file_path)
+
+    song_length_in_s = duration
     song_progress_slider.config(to=song_length_in_s)
     max_time_label.config(text=f"/ {format_time(song_length_in_s)}")
     current_song_time = 0
     is_timer_running = True
     update_progress_slider()
 
-    file_name = os.path.basename(file_path)
-    track_name_label.config(text=file_name)
-
-    item_ids = track_table.get_children()
-
-    for i, item_id in enumerate(item_ids):
-        if i == index:
-            track_table.item(item_id, values=('▶', i + 1,
-                                        track_table.item(item_id, 'values')[2], track_table.item(item_id, 'values')[3], track_table.item(item_id, 'values')[4]))
-        else:
-            track_table.item(item_id, values=('', i + 1,
-                                        track_table.item(item_id, 'values')[2], track_table.item(item_id, 'values')[3], track_table.item(item_id, 'values')[4]))
-
-
+    track_name_label.config(text=title)
+    reformat_playlist_display()
 
 def pause_music():
     global is_timer_running
@@ -133,16 +155,11 @@ def delete_selected_track(event):
     selected_item = track_table.selection()
 
     if selected_item:
-        track_number = int(track_table.item(selected_item)['values'][1]) - 1  # Subtract 1 for the track_list index
+        track_number = int(track_table.item(selected_item)['values'][1]) - 1
         del track_list[track_number]
 
         track_table.delete(selected_item)
-
-        for i, item_id in enumerate(track_table.get_children()):
-            track_table.item(item_id, values=('', i + 1,
-                                              track_table.item(item_id, 'values')[2],
-                                              track_table.item(item_id, 'values')[3],
-                                              track_table.item(item_id, 'values')[4]))
+        reformat_playlist_display()
 
 def save_playlist():
     playlist_file = filedialog.asksaveasfilename(defaultextension=".playlist", filetypes=[("Playlist Files", "*.playlist")])
@@ -162,9 +179,7 @@ def load_playlist():
             #clear_playlist() # this is to clear existing entries in track_list but maybe we want to append new one? I will leave it commented out for now.
             for line in file:
                 track_path = line.strip()
-                track_list.append(track_path)
-                track_name = os.path.basename(track_path)
-                track_table.insert('', 'end', values=('', len(track_list), track_name, '', ''))
+                add_entry_to_playlist(track_path)
 
         if len(track_list) > 0:
             current_track_index = 0
