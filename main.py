@@ -1,6 +1,7 @@
 import ttkbootstrap as ttk
 from tkinter import filedialog
 import pygame
+import os
 
 mixer_volume = 100
 song_length_in_s = 0
@@ -33,6 +34,8 @@ def load_music():
         current_song_time = 0
         is_timer_running = True
         update_progress_slider()
+        file_name = os.path.basename(file_path)
+        track_name_label.config(text=file_name)
 
 def pause_music():
     global is_timer_running
@@ -44,11 +47,6 @@ def pause_music():
         pygame.mixer.music.unpause()
         is_timer_running = True
         pause_button.config(text="⏸︎")
-
-# def unpause_music():
-#     global is_timer_running
-#     pygame.mixer.music.unpause()
-#     is_timer_running = True
 
 def stop_music():
     global current_song_time, is_timer_running, progress_update_job
@@ -89,15 +87,46 @@ def on_progress_slider_release(event):
 
 app = ttk.Window(themename="darkly")
 app.title("Music Player")
-app.geometry("400x300")
+app.geometry("500x250")
 
-song_progress_slider = ttk.Scale(from_=0, to=100, length=200)
-song_progress_slider.pack(pady=10)
+track_name_label = ttk.Label(app, text="Track Name")
+track_name_label.pack(pady=5)
+
+main_frame = ttk.Frame(app)
+main_frame.pack(fill="x", padx=10, pady=5)
+
+song_progress_slider = ttk.Scale(main_frame, from_=0, to=100, length=400)
+song_progress_slider.pack(side="left", fill="x", expand=True)
 song_progress_slider.bind("<Button-1>", on_progress_slider_press)
 song_progress_slider.bind("<ButtonRelease-1>", on_progress_slider_release)
 
-time_frame = ttk.Frame(app)
-time_frame.pack(pady=5)
+controls_frame = ttk.Frame(app)
+controls_frame.pack(fill="x", pady=10)
+
+control_buttons_frame = ttk.Frame(controls_frame)
+control_buttons_frame.pack(side="left", padx=10)
+
+skip_back_button = ttk.Button(control_buttons_frame, text="⏮︎︎")
+skip_back_button.pack(side="left", padx=5)
+
+stop_button = ttk.Button(control_buttons_frame, text="⏹︎", command=stop_music)
+stop_button.pack(side="left", padx=5)
+
+pause_button = ttk.Button(control_buttons_frame, text="⏸︎", command=pause_music)
+pause_button.pack(side="left", padx=5)
+
+skip_forward_button = ttk.Button(control_buttons_frame, text="⏭︎")
+skip_forward_button.pack(side="left", padx=5)
+
+time_frame = ttk.Frame(controls_frame)
+time_frame.pack(side="right", padx=10)
+
+volume_frame = ttk.Frame(time_frame)
+volume_frame.pack(side="left", padx=10, pady=10, fill="x")
+
+volume_slider = ttk.Scale(volume_frame, from_=0, to=100, orient='horizontal', value=mixer_volume, command=set_volume)
+volume_slider.pack()
+set_volume(None)
 
 current_time_label = ttk.Label(time_frame, text="00:00")
 current_time_label.pack(side="left")
@@ -107,24 +136,5 @@ max_time_label.pack(side="left")
 
 load_button = ttk.Button(app, text="Play from file", command=load_music)
 load_button.pack(pady=10)
-
-pause_button = ttk.Button(app, text="⏸︎", command=pause_music)
-pause_button.pack(pady=10)
-
-# unpause_button = ttk.Button(app, text="Unpause", command=unpause_music)
-# unpause_button.pack(pady=10)
-
-stop_button = ttk.Button(app, text="⏹︎", command=stop_music)
-stop_button.pack(pady=10)
-
-stop_button = ttk.Button(app, text="⏮︎︎")
-stop_button.pack(pady=10)
-
-stop_button = ttk.Button(app, text="⏭︎")
-stop_button.pack(pady=10)
-
-volume_slider = ttk.Scale(from_=100, to=0, orient='vertical', value=mixer_volume, command=set_volume)
-volume_slider.pack(pady=10)
-set_volume(None)
 
 app.mainloop()
