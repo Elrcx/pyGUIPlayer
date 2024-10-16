@@ -7,13 +7,13 @@ from mutagen import File
 mixer_volume = 100
 song_length_in_s = 0
 track_list = []
-current_track_index = None
+current_track_index = 0
 
 current_song_time = 0
 is_timer_running = False
 
 user_dragging_progress_slider = False
-progress_update_job = None
+progress_update_job = ''
 
 pygame.mixer.init()
 
@@ -77,7 +77,7 @@ def play_track(index):
     current_track_index = index
     file_path = track_list[index]
 
-    if progress_update_job is not None:
+    if progress_update_job != '':
         app.after_cancel(progress_update_job)
 
     pygame.mixer.music.load(file_path)
@@ -121,10 +121,10 @@ def stop_music():
     current_time_label.config(text=format_time(0))
     current_song_time = 0
     is_timer_running = False
-    if progress_update_job is not None:
+    if progress_update_job != '':
         app.after_cancel(progress_update_job)
 
-def set_volume(event):
+def set_volume(_):
     volume = volume_slider.get() / 100
     pygame.mixer.music.set_volume(volume)
 
@@ -137,11 +137,11 @@ def update_progress_slider():
             current_time_label.config(text=format_time(current_song_time))
     progress_update_job = app.after(1000, update_progress_slider)
 
-def on_progress_slider_press(event):
+def on_progress_slider_press(_):
     global user_dragging_progress_slider
     user_dragging_progress_slider = True
 
-def on_progress_slider_release(event):
+def on_progress_slider_release(_):
     global user_dragging_progress_slider, current_song_time
     user_dragging_progress_slider = False
 
@@ -151,8 +151,8 @@ def on_progress_slider_release(event):
     current_time_label.config(text=format_time(current_song_time))
     pygame.mixer.music.unpause()
 
-def on_track_double_click(event):
-    selected_item = track_table.selection()
+def on_track_double_click(_):
+    selected_item = track_table.selection()[0]
 
     if selected_item:
         track_number = int(track_table.item(selected_item)['values'][1]) - 1
@@ -164,9 +164,9 @@ def clear_playlist():
     for item in track_table.get_children():
         track_table.delete(item)
 
-def delete_selected_track(event):
+def delete_selected_track(_):
     global track_list, current_track_index
-    selected_item = track_table.selection()
+    selected_item = track_table.selection()[0]
 
     if selected_item:
         track_number = int(track_table.item(selected_item)['values'][1]) - 1
@@ -195,7 +195,7 @@ def load_playlist():
 
     if playlist_file:
         with open(playlist_file, 'r') as file:
-            #clear_playlist() # this is to clear existing entries in track_list but maybe we want to append new one? I will leave it commented out for now.
+            #clear_playlist() # this is to clear existing entries in track_list, but maybe we want to append new one? I will leave it commented out for now.
             for line in file:
                 track_path = line.strip()
                 add_entry_to_playlist(track_path)
