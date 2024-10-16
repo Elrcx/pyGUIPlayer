@@ -7,7 +7,7 @@ from mutagen import File
 mixer_volume = 100
 song_length_in_s = 0
 track_list = []
-current_track_index = 0
+current_track_index = None
 
 current_song_time = 0
 is_timer_running = False
@@ -151,12 +151,17 @@ def clear_playlist():
         track_table.delete(item)
 
 def delete_selected_track(event):
-    global track_list
+    global track_list, current_track_index
     selected_item = track_table.selection()
 
     if selected_item:
         track_number = int(track_table.item(selected_item)['values'][1]) - 1
         del track_list[track_number]
+
+        if track_number < current_track_index:
+            current_track_index -= 1
+        elif track_number == current_track_index:
+            current_track_index = None
 
         track_table.delete(selected_item)
         reformat_playlist_display()
