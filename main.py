@@ -28,17 +28,21 @@ def format_time(seconds):
     return f"{mins:02}:{secs:02}"
 
 def get_track_metadata(file_path):
-    audio = File(file_path)
+    try:
+        audio = File(file_path)
 
-    if audio is not None and audio.info is not None:
-        duration = int(audio.info.length)
-    else:
-        duration = 0
+        if audio is not None and audio.info is not None:
+            duration = int(audio.info.length)
+        else:
+            duration = 0
 
-    artist = audio.get('TPE1', "?")
-    album = audio.get('TALB', "?")
-    title = audio.get('TIT2', os.path.basename(file_path))
-    return duration, artist, album, title
+        artist = audio.get('TPE1', "?")
+        album = audio.get('TALB', "?")
+        title = audio.get('TIT2', os.path.basename(file_path))
+        return duration, artist, album, title
+    except Exception as e:
+        print(f"Error with loading metadata from {file_path}: {e}")
+        return 300, "?", "?", os.path.basename(file_path)
 
 def add_entry_to_playlist(file_path):
     track_list.append(file_path)
@@ -62,47 +66,61 @@ def reformat_playlist_display():
 
 def load_music():
     global song_length_in_s, current_song_time, is_timer_running, progress_update_job, current_track_index
-    file_paths = filedialog.askopenfilenames(
-        filetypes=[("MP3 Files", "*.mp3"), ("WAV Files", "*.wav"), ("All Files", "*.*")])
-    if file_paths:
-        for file_path in file_paths:
-            add_entry_to_playlist(file_path)
 
-    if len(track_list) > 0:
-        current_track_index = 0
-        play_track(current_track_index)
+    try:
+        file_paths = filedialog.askopenfilenames(
+            filetypes=[("MP3 Files", "*.mp3"), ("WAV Files", "*.wav"), ("All Files", "*.*")])
+        if file_paths:
+            for file_path in file_paths:
+                add_entry_to_playlist(file_path)
+
+        if len(track_list) > 0:
+            current_track_index = 0
+            play_track(current_track_index)
+    except Exception as e:
+        print(f"Error loading music files: {e}")
 
 def play_track(index):
     global song_length_in_s, current_song_time, is_timer_running, progress_update_job, current_track_index
-    current_track_index = index
-    file_path = track_list[index]
+    try:
+        current_track_index = index
+        file_path = track_list[index]
 
-    if progress_update_job != '':
-        app.after_cancel(progress_update_job)
+        if progress_update_job != '':
+            app.after_cancel(progress_update_job)
 
-    pygame.mixer.music.load(file_path)
-    pygame.mixer.music.play()
+        pygame.mixer.music.load(file_path)
+        pygame.mixer.music.play()
 
-    duration, artist, album, title = get_track_metadata(file_path)
+        duration, artist, album, title = get_track_metadata(file_path)
 
-    song_length_in_s = duration
-    song_progress_slider.config(to=song_length_in_s)
-    max_time_label.config(text=f"/ {format_time(song_length_in_s)}")
-    current_song_time = 0
-    is_timer_running = True
-    update_progress_slider()
+        song_length_in_s = duration
+        song_progress_slider.config(to=song_length_in_s)
+        max_time_label.config(text=f"/ {format_time(song_length_in_s)}")
+        current_song_time = 0
+        is_timer_running = True
+        update_progress_slider()
 
-    track_name_label.config(text=title)
-    reformat_playlist_display()
+        track_name_label.config(text=title)
+        reformat_playlist_display()
+    except Exception as e:
+        print(f"Error playing track {index}: {e}")
+        stop_music()
 
 def change_track(direction):
     global current_track_index
-    current_track_index += direction
-    if current_track_index >= len(track_list):
-        current_track_index = 0
-    elif current_track_index < 0:
-        current_track_index = len(track_list) - 1
-    play_track(current_track_index)
+
+    try:
+        current_track_index += direction
+        if current_track_index >= len(track_list):
+            current_track_index = 0
+        elif current_track_index < 0:
+            current_track_index = len(track_list) - 1
+        play_track(current_track_index)
+    except IndexError:
+        print("Track index out of range")
+    except Exception as e:
+        print(f"Error changing track {current_track_index}: {e}")
 
 def pause_music():
     global is_timer_running
@@ -166,43 +184,55 @@ def clear_playlist():
 
 def delete_selected_track(_):
     global track_list, current_track_index
-    selected_item = track_table.selection()[0]
 
-    if selected_item:
-        track_number = int(track_table.item(selected_item)['values'][1]) - 1
-        del track_list[track_number]
+    try:
+        selected_item = track_table.selection()[0]
 
-        if track_number < current_track_index:
-            current_track_index -= 1
-        elif track_number == current_track_index:
-            current_track_index = None
+        if selected_item:
+            track_number = int(track_table.item(selected_item)['values'][1]) - 1
+            del track_list[track_number]
 
-        track_table.delete(selected_item)
-        reformat_playlist_display()
+            if track_number < current_track_index:
+                current_track_index -= 1
+            elif track_number == current_track_index:
+                current_track_index = None
+
+            track_table.delete(selected_item)
+            reformat_playlist_display()
+    except IndexError:
+        print("No track selected to delete.")
+    except Exception as e:
+        print(f"Error deleting selected track: {e}")
 
 def save_playlist():
-    playlist_file = filedialog.asksaveasfilename(defaultextension=".playlist", filetypes=[("Playlist Files", "*.playlist")])
+    try:
+        playlist_file = filedialog.asksaveasfilename(defaultextension=".playlist", filetypes=[("Playlist Files", "*.playlist")])
 
-    if playlist_file:
-        with open(playlist_file, 'w') as file:
-            for track in track_list:
-                file.write(track + "\n")
+        if playlist_file:
+            with open(playlist_file, 'w') as file:
+                for track in track_list:
+                    file.write(track + "\n")
+    except Exception as e:
+        print(f"Error saving playlist: {e}")
 
 def load_playlist():
     global track_list, current_track_index
 
-    playlist_file = filedialog.askopenfilename(filetypes=[("Playlist Files", "*.playlist")])
+    try:
+        playlist_file = filedialog.askopenfilename(filetypes=[("Playlist Files", "*.playlist")])
 
-    if playlist_file:
-        with open(playlist_file, 'r') as file:
-            #clear_playlist() # this is to clear existing entries in track_list, but maybe we want to append new one? I will leave it commented out for now.
-            for line in file:
-                track_path = line.strip()
-                add_entry_to_playlist(track_path)
+        if playlist_file:
+            with open(playlist_file, 'r') as file:
+                #clear_playlist() # this is to clear existing entries in track_list, but maybe we want to append new one? I will leave it commented out for now.
+                for line in file:
+                    track_path = line.strip()
+                    add_entry_to_playlist(track_path)
 
-        if len(track_list) > 0:
-            current_track_index = 0
-            play_track(current_track_index)
+            if len(track_list) > 0:
+                current_track_index = 0
+                play_track(current_track_index)
+    except Exception as e:
+        print(f"Error loading playlist: {e}")
 
 
 app = ttk.Window(themename="darkly")
