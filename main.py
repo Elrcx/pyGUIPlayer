@@ -29,14 +29,15 @@ def load_music():
         for file_path in file_paths:
             track_list.append(file_path)
             file_name = os.path.basename(file_path)
-            track_table.insert('', 'end', values=(len(track_list), file_name, '', ''))
+            track_table.insert('', 'end', values=('', len(track_list), file_name, '', ''))
 
     if len(track_list) > 0:
         current_track_index = 0
         play_track(current_track_index)
 
 def play_track(index):
-    global song_length_in_s, current_song_time, is_timer_running, progress_update_job
+    global song_length_in_s, current_song_time, is_timer_running, progress_update_job, current_track_index
+    current_track_index = index
     file_path = track_list[index]
 
     if progress_update_job is not None:
@@ -54,6 +55,18 @@ def play_track(index):
 
     file_name = os.path.basename(file_path)
     track_name_label.config(text=file_name)
+
+    item_ids = track_table.get_children()
+
+    for i, item_id in enumerate(item_ids):
+        if i == index:
+            track_table.item(item_id, values=('▶', i + 1,
+                                        track_table.item(item_id, 'values')[2], track_table.item(item_id, 'values')[3], track_table.item(item_id, 'values')[4]))
+        else:
+            track_table.item(item_id, values=('', i + 1,
+                                        track_table.item(item_id, 'values')[2], track_table.item(item_id, 'values')[3], track_table.item(item_id, 'values')[4]))
+
+
 
 def pause_music():
     global is_timer_running
@@ -102,10 +115,17 @@ def on_progress_slider_release(event):
     current_time_label.config(text=format_time(current_song_time))
     pygame.mixer.music.unpause()
 
+def on_track_double_click(event):
+    selected_item = track_table.selection()
+
+    if selected_item:
+        track_number = int(track_table.item(selected_item)['values'][1]) - 1
+        play_track(track_number)
+
 
 app = ttk.Window(themename="darkly")
 app.title("Music Player")
-app.geometry("500x600")
+app.geometry("550x600")
 
 track_name_label = ttk.Label(app, text="Track Name")
 track_name_label.pack(pady=5)
@@ -155,16 +175,26 @@ max_time_label.pack(side="left")
 load_button = ttk.Button(app, text="Play from file", command=load_music)
 load_button.pack(pady=10)
 
-track_table = ttk.Treeview(app, columns=('Number', 'Title', 'Artist/Album', 'Duration'), show='headings', height=10)
+table_frame = ttk.Frame(app)
+table_frame.pack(fill="both", padx=10, pady=5)
+
+track_table = ttk.Treeview(table_frame, columns=('Playing', 'Number', 'Title', 'Artist/Album', 'Duration'), show='headings', height=10)
+track_table.heading('Playing', text='')
 track_table.heading('Number', text='#')
 track_table.heading('Title', text='Title')
 track_table.heading('Artist/Album', text='Artist/Album')
 track_table.heading('Duration', text='Duration')
+track_table.column('Playing', width=30, stretch=False)
 track_table.column('Number', width=30, stretch=False)
 track_table.column('Title', width=200, stretch=True)
 track_table.column('Artist/Album', width=150)
 track_table.column('Duration', width=80, stretch=False)
 
-track_table.pack(fill="both", padx=10, pady=5)
+track_table.pack(side="left", fill="both", expand=True)
+track_table.bind("<Double-1>", on_track_double_click)
+
+track_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=track_table.yview)
+track_scrollbar.pack(side="right", fill="y")
+track_table.configure(yscrollcommand=track_scrollbar.set)
 
 app.mainloop()
