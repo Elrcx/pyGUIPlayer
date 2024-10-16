@@ -127,11 +127,13 @@ app = ttk.Window(themename="darkly")
 app.title("Music Player")
 app.geometry("550x600")
 
-track_name_label = ttk.Label(app, text="Track Name")
-track_name_label.pack(pady=5)
+app.grid_columnconfigure(0, weight=1)
+
+track_name_label = ttk.Label(app, text="Track Name", anchor="center")
+track_name_label.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
 
 main_frame = ttk.Frame(app)
-main_frame.pack(fill="x", padx=10, pady=5)
+main_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
 
 song_progress_slider = ttk.Scale(main_frame, from_=0, to=100, length=400)
 song_progress_slider.pack(side="left", fill="x", expand=True)
@@ -139,7 +141,7 @@ song_progress_slider.bind("<Button-1>", on_progress_slider_press)
 song_progress_slider.bind("<ButtonRelease-1>", on_progress_slider_release)
 
 controls_frame = ttk.Frame(app)
-controls_frame.pack(fill="x", pady=10)
+controls_frame.grid(row=2, column=0, pady=10, sticky="ew")
 
 control_buttons_frame = ttk.Frame(controls_frame)
 control_buttons_frame.pack(side="left", padx=10)
@@ -172,11 +174,25 @@ current_time_label.pack(side="left")
 max_time_label = ttk.Label(time_frame, text="/ 00:00")
 max_time_label.pack(side="left")
 
-load_button = ttk.Button(app, text="Play from file", command=load_music)
-load_button.pack(pady=10)
+playlist_controls_frame = ttk.Frame(app)
+playlist_controls_frame.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
+
+load_button = ttk.Button(playlist_controls_frame, text="Add to playlist", command=load_music)
+load_button.pack(side="left", padx=5)
+
+save_playlist_button = ttk.Button(playlist_controls_frame, text="Save playlist")
+save_playlist_button.pack(side="left", padx=5)
+
+load_playlist_button = ttk.Button(playlist_controls_frame, text="Load playlist")
+load_playlist_button.pack(side="left", padx=5)
+
+clear_playlist_button = ttk.Button(playlist_controls_frame, text="Clear playlist")
+clear_playlist_button.pack(side="left", padx=5)
 
 table_frame = ttk.Frame(app)
-table_frame.pack(fill="both", padx=10, pady=5)
+table_frame.grid(row=4, column=0, padx=10, pady=5, sticky="nsew")
+
+app.grid_rowconfigure(4, weight=1)
 
 track_table = ttk.Treeview(table_frame, columns=('Playing', 'Number', 'Title', 'Artist/Album', 'Duration'), show='headings', height=10)
 track_table.heading('Playing', text='')
