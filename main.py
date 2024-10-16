@@ -17,6 +17,11 @@ progress_update_job = None
 
 pygame.mixer.init()
 
+def check_for_next_track():
+    if not pygame.mixer.music.get_busy() and current_track_index is not None and is_timer_running:
+        change_track(1)
+    app.after(500, check_for_next_track)
+
 def format_time(seconds):
     mins = seconds // 60
     secs = seconds % 60
@@ -89,6 +94,15 @@ def play_track(index):
 
     track_name_label.config(text=title)
     reformat_playlist_display()
+
+def change_track(direction):
+    global current_track_index
+    current_track_index += direction
+    if current_track_index >= len(track_list):
+        current_track_index = 0
+    elif current_track_index < 0:
+        current_track_index = len(track_list) - 1
+    play_track(current_track_index)
 
 def pause_music():
     global is_timer_running
@@ -214,7 +228,7 @@ controls_frame.grid(row=2, column=0, pady=10, sticky="ew")
 control_buttons_frame = ttk.Frame(controls_frame)
 control_buttons_frame.pack(side="left", padx=10)
 
-skip_back_button = ttk.Button(control_buttons_frame, text="⏮︎︎")
+skip_back_button = ttk.Button(control_buttons_frame, text="⏮︎︎", command=lambda: change_track(-1))
 skip_back_button.pack(side="left", padx=5)
 
 stop_button = ttk.Button(control_buttons_frame, text="⏹︎", command=stop_music)
@@ -223,7 +237,7 @@ stop_button.pack(side="left", padx=5)
 pause_button = ttk.Button(control_buttons_frame, text="⏸︎", command=pause_music)
 pause_button.pack(side="left", padx=5)
 
-skip_forward_button = ttk.Button(control_buttons_frame, text="⏭︎")
+skip_forward_button = ttk.Button(control_buttons_frame, text="⏭︎", command=lambda: change_track(1))
 skip_forward_button.pack(side="left", padx=5)
 
 time_frame = ttk.Frame(controls_frame)
@@ -282,4 +296,5 @@ track_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=track_ta
 track_scrollbar.pack(side="right", fill="y")
 track_table.configure(yscrollcommand=track_scrollbar.set)
 
+check_for_next_track()
 app.mainloop()
