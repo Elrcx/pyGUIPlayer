@@ -106,6 +106,7 @@ def play_track(index):
     except Exception as e:
         print(f"Error playing track {index}: {e}")
         stop_music()
+    update_pause_button_text()
 
 def change_track(direction):
     global current_track_index
@@ -127,20 +128,32 @@ def pause_music():
     if is_timer_running:
         pygame.mixer.music.pause()
         is_timer_running = False
-        pause_button.config(text="▶")
     else:
         pygame.mixer.music.unpause()
         is_timer_running = True
-        pause_button.config(text="⏸︎")
+    update_pause_button_text()
+
+def update_pause_button_text():
+    if is_timer_running:
+        pause_button.config(text="⏸")
+    else:
+        pause_button.config(text="▶")
+
 
 def stop_music():
     global current_song_time, is_timer_running, progress_update_job
-    pygame.mixer.music.stop()
+    is_timer_running = False
+    pygame.mixer.music.rewind()
+    pygame.mixer.music.set_pos(0)
+    pygame.mixer.music.pause()
     current_time_label.config(text=format_time(0))
     current_song_time = 0
-    is_timer_running = False
+    song_progress_slider.set(current_song_time)
+
     if progress_update_job != '':
         app.after_cancel(progress_update_job)
+
+    update_pause_button_text()
 
 def set_volume(_):
     volume = volume_slider.get() / 100
@@ -164,10 +177,8 @@ def on_progress_slider_release(_):
     user_dragging_progress_slider = False
 
     current_song_time = int(song_progress_slider.get())
-    pygame.mixer.music.pause()
     pygame.mixer.music.set_pos(current_song_time)
     current_time_label.config(text=format_time(current_song_time))
-    pygame.mixer.music.unpause()
 
 def on_track_double_click(_):
     selected_item = track_table.selection()[0]
@@ -258,16 +269,16 @@ controls_frame.grid(row=2, column=0, pady=10, sticky="ew")
 control_buttons_frame = ttk.Frame(controls_frame)
 control_buttons_frame.pack(side="left", padx=10)
 
-skip_back_button = ttk.Button(control_buttons_frame, text="⏮︎︎", command=lambda: change_track(-1))
-skip_back_button.pack(side="left", padx=5)
-
-stop_button = ttk.Button(control_buttons_frame, text="⏹︎", command=stop_music)
+stop_button = ttk.Button(control_buttons_frame, text=" ■  \u23F5", width=3, command=stop_music)
 stop_button.pack(side="left", padx=5)
 
-pause_button = ttk.Button(control_buttons_frame, text="⏸︎", command=pause_music)
+pause_button = ttk.Button(control_buttons_frame, text="▶", width=3, command=pause_music)
 pause_button.pack(side="left", padx=5)
 
-skip_forward_button = ttk.Button(control_buttons_frame, text="⏭︎", command=lambda: change_track(1))
+skip_back_button = ttk.Button(control_buttons_frame, text="⏮", width=3, command=lambda: change_track(-1))
+skip_back_button.pack(side="left", padx=5)
+
+skip_forward_button = ttk.Button(control_buttons_frame, text="⏭", width=3, command=lambda: change_track(1))
 skip_forward_button.pack(side="left", padx=5)
 
 time_frame = ttk.Frame(controls_frame)
