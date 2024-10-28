@@ -337,5 +337,7 @@ track_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=track_ta
 track_scrollbar.pack(side="right", fill="y")
 track_table.configure(yscrollcommand=track_scrollbar.set)
 
-check_for_next_track()
-app.mainloop()
+
+if __name__ == '__main__':
+    check_for_next_track()
+    app.mainloop()
